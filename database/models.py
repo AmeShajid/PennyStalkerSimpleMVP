@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS insider_transactions (
 );
 """
 
+
 #Second tabel Scan History
 """
 id - Unique identifier for each scan (1, 2, 3, ...)
