@@ -46,7 +46,7 @@ class Database:
         self.connection.row_factory = sqlite3.Row
 
         #the cursor object is used to execute sql commanbds
-        self.cursor - self.connection.cursor()
+        self.cursor = self.connection.cursor()
 
         #initalize the schema creates tables if tehy dont exist
         self.initialize_schema()
@@ -104,7 +104,7 @@ class Database:
             db.executemany(query, params_list)
         """
         #execture the query once for each set of paramets
-        return self.cursor.executeman(query, params_list)
+        return self.cursor.executemany(query, params_list)
 
     #this will save all changes to the db file
     def commit(self):

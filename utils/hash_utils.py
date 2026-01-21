@@ -28,7 +28,7 @@ Example:
 """
 
 #Type hint explanation transaction is a dict this functions returns a string
-def generate_transaction_id(transaction : dict) -> str:
+def generate_transaction_hash(transaction : dict) -> str:
     #first get the stock ticekrs from transaction 
     #if ticker doesn't exists then use UNKNOWN
     ticker = transaction.get("ticker", "Unknown")
@@ -47,9 +47,9 @@ def generate_transaction_id(transaction : dict) -> str:
     #if trade value doesn't exist then use 0
     #convert this number into an int
     #then convert this int into a str
-    trade_value = str(int(transaction.get("trade_value", 0)))
+    trade_value = str(int(transaction.get("value", 0)))
 
     #combine to make the id
-    transaction_id = f"{ticker}_{insider_name}_{trade_date}_{trade_value}"
+    transaction_hash = f"{ticker}_{insider_name}_{trade_date}_{trade_value}"
 
-    return transaction_id
+    return transaction_hash
