@@ -68,18 +68,11 @@ class Database:
     def execute(self, query: str, params: tuple = ()): 
         """
         Args:
-            query: SQL statement to execute (e.g., "SELECT * FROM insider_transactions")
+            query: SQL statement to execute ( "SELECT * FROM insider_transactions")
             params: Parameters for the query (used with ? placeholders)
             
         Returns:
             Cursor object with results
-            
-        Example:
-            # Query without parameters
-            cursor = db.execute("SELECT * FROM insider_transactions")
-            
-            # Query with parameters (safe from SQL injection)
-            cursor = db.execute("SELECT * FROM insider_transactions WHERE ticker = ?", ("LSAK",))
         """
         #this will execute the sql query with params 
         #using ? placeholders to prevent sql attacks for future
@@ -92,16 +85,6 @@ class Database:
         Args:
             query: SQL statement to execute
             params_list: List of parameter tuples
-            
-        Example:
-            # Insert multiple rows at once (faster than individual inserts)
-            query = "INSERT INTO insider_transactions (ticker, value) VALUES (?, ?)"
-            params_list = [
-                ("LSAK", 9000000),
-                ("HYPD", 611458),
-                ("LTC", 521960)
-            ]
-            db.executemany(query, params_list)
         """
         #execture the query once for each set of paramets
         return self.cursor.executemany(query, params_list)
@@ -111,11 +94,6 @@ class Database:
         """
         Changes are not permanent until commit() is called.
         Think of it like clicking "Save" button.
-        
-        Example:
-            db.execute("INSERT INTO ...")
-            db.execute("UPDATE ...")
-            db.commit()  # Now changes are saved
         """
         #commits everything
         self.connection.commit()
@@ -124,11 +102,6 @@ class Database:
     def rollback(self):
         """
         when something goes wrong and you want to cancel changes.
-        
-        Example:
-            db.execute("INSERT INTO ...")
-            # Oops, error occurred!
-            db.rollback()  # Cancel that insert
         """
         #undo all changes since last commit
         self.connection.rollback()
@@ -141,11 +114,16 @@ class Database:
         # Close the database connection
         self.connection.close()
     
+
+
+
+    ## KEY UNDERSTANDING
+        #Enter and exit are both dunder bnecause they let us use enter and exit with the WITH key word example I put below
     #Runs at the start of the with block and returns the db object
     #also lets us use the WITH statement 
     def __enter__(self):
         """
-        Allows usage like:
+        Allows:
             with Database() as db:
                 db.execute("SELECT ...")
             # Connection automatically closed

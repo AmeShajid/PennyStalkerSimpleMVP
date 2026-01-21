@@ -8,21 +8,21 @@ This just has SQL create table statements and thats IT
 #First table Insider_Transactions table
 """
 id - Unique identifier for each transaction (1, 2, 3, ...)
-ticker - Stock symbol (e.g., "LSAK", "AAPL")
-company_name - Full company name (e.g., "Lesaka Technologies Inc")
+ticker - Stock symbol ("LSAK", "AAPL")
+company_name - Full company name ("Lesaka Technologies Inc")
 filing_date - When insider filed Form 4 with SEC
 trade_date - When the actual stock purchase occurred
-insider_name - Person who bought stock (e.g., "Mazanderani Ali")
-insider_title - Their role (e.g., "CEO", "CFO", "Director")
+insider_name - Person who bought stock ("Mazanderani Ali")
+insider_title - Their role ("CEO", "CFO", "Director")
 trade_type - Type of transaction (always "P - Purchase" for our MVP)
-price - Price per share in dollars (e.g., 5.00)
-quantity - Number of shares purchased (e.g., 1800000)
-owned - Total shares owned after this purchase (e.g., 2325115)
-delta_own_pct - Percentage change in ownership (e.g., 343.0 means +343%)
+price - Price per share in dollars (5.00)
+quantity - Number of shares purchased (1800000)
+owned - Total shares owned after this purchase (2325115)
+delta_own_pct - Percentage change in ownership (343.0 means +343%)
 value - Total dollar value of purchase (price × quantity)
-scan_type - Which scan found this (e.g., "Latest Cluster Buys")
+scan_type - Which scan found this ("Latest Cluster Buys")
 scraped_at - When we added this to database (auto-filled by SQLite)
-transaction_hash - Unique ID (e.g., "LSAK_MazanderaniAli_20251231_9000000")
+transaction_hash - Unique ID ("LSAK_MazanderaniAli_20251231_9000000")
 
 """
 INSIDER_TRANSACTIONS_TABLE = """
@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS insider_transactions (
 #Second tabel Scan History
 """
 id - Unique identifier for each scan (1, 2, 3, ...)
-scan_type - What was scanned (e.g., "Latest Cluster Buys", "Top Officer Purchases Today")
+scan_type - What was scanned ("Latest Cluster Buys", "Top Officer Purchases Today")
 scan_timestamp - When we ran this scan (auto-filled)
 num_transactions - Total transactions found on OpenInsider
 num_new - How many were NEW (not already in database)
