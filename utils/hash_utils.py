@@ -14,7 +14,7 @@ Args:
         trade date
         value
 Returns:
-    string such as "TSLA_ELONMUSK_20250101_900000"
+    string "TSLA_ELONMUSK_20250101_900000"
 
 Example:
     transaction = {
