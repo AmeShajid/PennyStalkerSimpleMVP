@@ -113,9 +113,6 @@ class Database:
         """
         # Close the database connection
         self.connection.close()
-    
-
-
 
     ## KEY UNDERSTANDING
         #Enter and exit are both dunder bnecause they let us use enter and exit with the WITH key word example I put below
