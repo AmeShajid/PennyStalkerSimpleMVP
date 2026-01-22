@@ -87,25 +87,25 @@ class BaseScraper:
         try: 
             #start our get req with our headers and timeout
             #get url, for headers use the self headers, and wait 10 sec for a response
-            requests = self.session.get(url, headers=self.headers, timeout=10)
+            response = self.session.get(url, headers=self.headers, timeout=10)
 
             #if req was succesfull (200)
-            if requests.status_code == 200:
+            if response.status_code == 200:
                 print ("Succesfully fetched")
                 #return what we fetched the html
-                return requests.text
+                return response.text
             #elif we failed and its either 429 or 404
-            elif requests.status_code == 429:
+            elif response.status_code == 429:
                 #too many req at once we are being rate limited
                 print("Failed status code 429 - rate limited")
                 print("Increase rate limit or wait")
                 return None 
-            elif requests.status_code == 404: 
+            elif response.status_code == 404: 
                 print("Failed status code 404 - page not found")
                 return None
             #else its some other error
             else:
-                print(f"Failed status code {requests.status_code}")
+                print(f"Failed status code {response.status_code}")
                 return None 
         
         #if req take too long (which means over 10 sec)
@@ -159,4 +159,3 @@ class BaseScraper:
         """
         # Always close the session when exiting the with
         self.close()
-
