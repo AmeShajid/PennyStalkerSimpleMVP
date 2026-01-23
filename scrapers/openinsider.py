@@ -73,7 +73,7 @@ options_dictionary = {
         'needs_timeframe': True
     },
     
-    #these topions dont need 
+    #these topions do need 
     'l': {
         'name': 'Top Officer Purchases Today',
         'url': 'http://openinsider.com/top-officer-purchases-of-the-day',
@@ -105,3 +105,30 @@ options_dictionary = {
         'needs_timeframe': False
     }
 }
+
+#the actual class
+#This will scrape the insider trading data from the web
+class OpenInsiderScraper(BaseScraper):
+    #initialzing the scraper
+    """
+    Args:
+        scan_type (str): Option letter (a-q)
+        timeframe (str): '2weeks' or 'month'
+        rate_limit_delay (float): Seconds to wait between requests
+    """
+    def __init__(self, scan_type: str, timeframe: str = None, rate_limit_delay: float = 2.0):
+        #call the partent constructor 
+        super().__init__(rate_limit_delay=rate_limit_delay)
+        
+        #store both variables so we can use it
+        self.scan_type = scan_type
+        self.timeframe = timeframe
+
+        #if the scan type not in dict throw an error
+        if scan_type not in options_dictionary:
+            raise ValueError(f"Invalid option : {scan_type}. Must be a-q")
+
+        #if we pass that, then get the scan type from dict and also the name 
+        self.option = options_dictionary[scan_type]
+        self.scan_name = self.option["name"]
+        
