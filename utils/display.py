@@ -26,6 +26,28 @@ class TerminalDisplay:
         # This creates a line like "───────────────────────────"
         return self.separator_char * self.width
     
+    #asking for what timeframe they want to choose 
+    def show_timeframe_menu(self) -> str:
+        #returns 2 weeks or month
+        # Print menu
+        print("\n" + self.create_border())
+        print("Select Timeframe:")
+        print(self.create_border())
+        print()
+        print("1) Last 2 Weeks")
+        print("2) Last Month")
+        print()
+
+        #so now while is true
+        while True:
+            choice =  input("Enter 1 or 2 : ").strip()
+            if choice == "1":
+                return "2weeks"
+            elif choice == "2":
+                return "month"
+            else:
+                print("invalid choice.. choose either 1 or 2")
+                    
     #this is going to show the menu and also get the user's choice 
     def show_menu(self) -> str:
         #make a 2 line clear screen 
