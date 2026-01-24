@@ -15,65 +15,66 @@ from bs4 import BeautifulSoup
 
 #first we need a dict with all of our urls and data for EACH option
 #Also we are adding a bool sections for the optoins that need a timeframe vs dont
+# URLs use {fd} as placeholder for filing days: 14 for 2 weeks, 30 for 1 month
 options_dictionary = {
-    #these topsion dont need
+    # these options need a timeframe
     'a': {
         'name': 'Latest Cluster Buys',
-        'url': 'http://openinsider.com/latest-cluster-buys',
+        'url': 'http://openinsider.com/screener?s=&o=&pl=3&ph=&ll=&lh=&fd={fd}&fdr=&td=0&tdr=&fdlyl=&fdlyh=6&daysago=&xp=1&vl=25&vh=&ocl=1&och=&sic1=-1&sicl=100&sich=9999&grp=2&nfl=&nfh=&nil=2&nih=&nol=1&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1',
         'needs_timeframe': True
     },
     'b': {
         'name': 'Latest Penny Stock Buys',
-        'url': 'http://openinsider.com/latest-penny-stock-buys',
+        'url': 'http://openinsider.com/screener?s=&o=&pl=&ph=5&ll=&lh=&fd={fd}&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&vl=25&vh=&ocl=&och=&sic1=-1&sicl=100&sich=9999&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1',
         'needs_timeframe': True
     },
     'c': {
         'name': 'Latest Insider Trading (all filings)',
-        'url': 'http://openinsider.com/latest-insider-trading',
+        'url': 'http://openinsider.com/screener?s=&o=&pl=&ph=&ll=&lh=&fd={fd}&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&vl=&vh=&ocl=&och=&sic1=-1&sicl=100&sich=9999&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1',
         'needs_timeframe': True
     },
     'd': {
         'name': 'Latest Insider Purchases',
-        'url': 'http://openinsider.com/insider-purchases',
+        'url': 'http://openinsider.com/screener?s=&o=&pl=&ph=&ll=&lh=&fd={fd}&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&vl=&vh=&ocl=&och=&sic1=-1&sicl=100&sich=9999&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1',
         'needs_timeframe': True
     },
     'e': {
         'name': 'Latest Insider Purchases $25k+',
-        'url': 'http://openinsider.com/latest-insider-purchases-25k',
+        'url': 'http://openinsider.com/screener?s=&o=&pl=&ph=&ll=&lh=&fd={fd}&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&vl=25&vh=&ocl=&och=&sic1=-1&sicl=100&sich=9999&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1',
         'needs_timeframe': True
     },
     'f': {
         'name': 'Latest Officer Purchases $25k+',
-        'url': 'http://openinsider.com/latest-officer-purchases-25k',
+        'url': 'http://openinsider.com/screener?s=&o=&pl=&ph=&ll=&lh=&fd={fd}&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&vl=25&vh=&ocl=1&och=&sic1=-1&sicl=100&sich=9999&grp=0&nfl=&nfh=&nil=2&nih=&nol=1&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1',
         'needs_timeframe': True
     },
     'g': {
         'name': 'Latest CEO/CFO Purchases $25k+',
-        'url': 'http://openinsider.com/latest-ceo-cfo-purchases-25k',
+        'url': 'http://openinsider.com/screener?s=&o=&pl=&ph=&ll=&lh=&fd={fd}&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&vl=25&vh=&ocl=1&och=&sic1=-1&sicl=100&sich=9999&grp=0&nfl=&nfh=&nil=1&nih=&nol=1&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1',
         'needs_timeframe': True
     },
     'h': {
         'name': 'Latest Insider Sales',
-        'url': 'http://openinsider.com/insider-sales',
+        'url': 'http://openinsider.com/screener?s=&o=&pl=&ph=&ll=&lh=&fd={fd}&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&vl=&vh=&ocl=&och=&sic1=-1&sicl=100&sich=9999&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1',
         'needs_timeframe': True
     },
     'i': {
         'name': 'Latest Insider Sales $100k+',
-        'url': 'http://openinsider.com/latest-insider-sales-100k',
+        'url': 'http://openinsider.com/screener?s=&o=&pl=&ph=&ll=&lh=&fd={fd}&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&vl=100&vh=&ocl=&och=&sic1=-1&sicl=100&sich=9999&grp=0&nfl=&nfh=&nil=&nih=&nol=&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1',
         'needs_timeframe': True
     },
     'j': {
         'name': 'Latest Officer Sales $100k+',
-        'url': 'http://openinsider.com/latest-officer-sales-100k',
+        'url': 'http://openinsider.com/screener?s=&o=&pl=&ph=&ll=&lh=&fd={fd}&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&vl=100&vh=&ocl=1&och=&sic1=-1&sicl=100&sich=9999&grp=0&nfl=&nfh=&nil=2&nih=&nol=1&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1',
         'needs_timeframe': True
     },
     'k': {
         'name': 'Latest CEO/CFO Sales $100k+',
-        'url': 'http://openinsider.com/latest-ceo-cfo-sales-100k',
+        'url': 'http://openinsider.com/screener?s=&o=&pl=&ph=&ll=&lh=&fd={fd}&fdr=&td=0&tdr=&fdlyl=&fdlyh=&daysago=&xp=1&vl=100&vh=&ocl=1&och=&sic1=-1&sicl=100&sich=9999&grp=0&nfl=&nfh=&nil=1&nih=&nol=1&noh=&v2l=&v2h=&oc2l=&oc2h=&sortcol=0&cnt=100&page=1',
         'needs_timeframe': True
     },
     
-    #these topions do need 
+    # Don't need timeframe
     'l': {
         'name': 'Top Officer Purchases Today',
         'url': 'http://openinsider.com/top-officer-purchases-of-the-day',
@@ -131,4 +132,32 @@ class OpenInsiderScraper(BaseScraper):
         #if we pass that, then get the scan type from dict and also the name 
         self.option = options_dictionary[scan_type]
         self.scan_name = self.option["name"]
+
+    #this will build the url for the scan
+    def build_url(self) -> str:
+        """
+        Takes the base URL from config and replaces {fd} placeholder with days
         
+        Returns:
+            str: Complete URL to scrape
+        """
+        #first get the irl 
+        url = self.option["url"]
+
+        #if the scan needs a tf replace fd with timeframe
+        if self.option["needs_timeframe"] and self.timeframe:
+            #we need to have our map
+            days_dict = {
+                "2weeks":14, 
+                "month": 30
+            }
+
+            #get the num of dayus for the tf
+            days = days_dict.get(self.timeframe, 14)
+
+            #replcae fd with the number of dayus
+            url = url.replace("{fd}", str(days))
+
+        return url 
+    
+    #
