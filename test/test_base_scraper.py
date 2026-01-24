@@ -1,459 +1,392 @@
 """
-Test suite for scrapers/base.py
-Tests the BaseScraper class including initialization, fetching, and error handling
+Test suite for scrapers/openinsider.py
+Tests the OpenInsiderScraper class including URL building, parsing, and data cleaning
 """
 
 import sys
 import os
+from unittest.mock import Mock, patch
 from io import StringIO
-from unittest.mock import Mock, patch, MagicMock
-import requests
 
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from scrapers.base import BaseScraper
+from scrapers.openinsider import OpenInsiderScraper, options_dictionary
 
 
-def test_base_scraper_initialization():
-    """Test that BaseScraper initializes with correct attributes"""
-    scraper = BaseScraper(rate_limit_delay=2.0)
+def test_options_dictionary_exists():
+    """Test that options_dictionary is defined and has all options"""
+    assert options_dictionary is not None, "options_dictionary should exist"
+    assert len(options_dictionary) == 16, f"Should have 16 options, got {len(options_dictionary)}"
+    print(f"✓ test_options_dictionary_exists PASSED")
+
+
+def test_options_dictionary_has_all_letters():
+    """Test that all letters a-q are in options_dictionary"""
+    expected_options = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q']
     
-    assert scraper.rate_limit_delay == 2.0, f"Rate limit should be 2.0, got {scraper.rate_limit_delay}"
-    assert scraper.session is not None, "Session should be initialized"
-    assert scraper.headers is not None, "Headers should be initialized"
-    assert 'User-Agent' in scraper.headers, "Headers should contain User-Agent"
+    for option in expected_options:
+        assert option in options_dictionary, f"Option '{option}' missing from options_dictionary"
+    
+    print(f"✓ test_options_dictionary_has_all_letters PASSED")
+
+
+def test_options_dictionary_structure():
+    """Test that each option has required fields (name, url, needs_timeframe)"""
+    for option, config in options_dictionary.items():
+        assert 'name' in config, f"Option '{option}' missing 'name'"
+        assert 'url' in config, f"Option '{option}' missing 'url'"
+        assert 'needs_timeframe' in config, f"Option '{option}' missing 'needs_timeframe'"
+        assert isinstance(config['name'], str), f"Option '{option}' name should be string"
+        assert isinstance(config['url'], str), f"Option '{option}' url should be string"
+        assert isinstance(config['needs_timeframe'], bool), f"Option '{option}' needs_timeframe should be bool"
+    
+    print(f"✓ test_options_dictionary_structure PASSED")
+
+
+def test_latest_options_need_timeframe():
+    """Test that options a-k need timeframe"""
+    latest_options = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k']
+    
+    for option in latest_options:
+        assert options_dictionary[option]['needs_timeframe'] is True, \
+            f"Option '{option}' should need timeframe"
+    
+    print(f"✓ test_latest_options_need_timeframe PASSED")
+
+
+def test_top_options_dont_need_timeframe():
+    """Test that options l-q don't need timeframe"""
+    top_options = ['l', 'm', 'n', 'o', 'p', 'q']
+    
+    for option in top_options:
+        assert options_dictionary[option]['needs_timeframe'] is False, \
+            f"Option '{option}' should not need timeframe"
+    
+    print(f"✓ test_top_options_dont_need_timeframe PASSED")
+
+
+def test_openinsider_scraper_initialization():
+    """Test that OpenInsiderScraper initializes correctly"""
+    scraper = OpenInsiderScraper('a', '2weeks')
+    
+    assert scraper.scan_type == 'a', "scan_type should be 'a'"
+    assert scraper.timeframe == '2weeks', "timeframe should be '2weeks'"
+    assert scraper.scan_name == options_dictionary['a']['name'], "scan_name should match config"
+    assert scraper.session is not None, "session should be initialized from BaseScraper"
     
     scraper.close()
-    print(f"✓ test_base_scraper_initialization PASSED")
+    print(f"✓ test_openinsider_scraper_initialization PASSED")
 
 
-def test_base_scraper_default_rate_limit():
-    """Test that default rate limit is 2.0 seconds"""
-    scraper = BaseScraper()  # No parameter
+def test_openinsider_scraper_invalid_option():
+    """Test that invalid scan type raises error"""
+    try:
+        scraper = OpenInsiderScraper('z', '2weeks')  # Invalid option
+        assert False, "Should have raised ValueError"
+    except ValueError as e:
+        assert "Invalid option" in str(e)
+        print(f"✓ test_openinsider_scraper_invalid_option PASSED")
+
+
+def test_build_url_with_2weeks_timeframe():
+    """Test building URL for option that needs timeframe with 2weeks"""
+    scraper = OpenInsiderScraper('a', '2weeks')
     
-    assert scraper.rate_limit_delay == 2.0, f"Default rate limit should be 2.0, got {scraper.rate_limit_delay}"
+    url = scraper.build_url()
+    
+    # URL should have fd=14 for 2 weeks
+    assert 'fd=14' in url, "URL should contain fd=14 for 2weeks"
+    assert '{fd}' not in url, "URL should not contain placeholder {fd}"
     
     scraper.close()
-    print(f"✓ test_base_scraper_default_rate_limit PASSED")
+    print(f"✓ test_build_url_with_2weeks_timeframe PASSED")
 
 
-def test_base_scraper_custom_rate_limit():
-    """Test that custom rate limit can be set"""
-    scraper = BaseScraper(rate_limit_delay=5.0)
+def test_build_url_with_month_timeframe():
+    """Test building URL with month timeframe"""
+    scraper = OpenInsiderScraper('a', 'month')
     
-    assert scraper.rate_limit_delay == 5.0, f"Rate limit should be 5.0, got {scraper.rate_limit_delay}"
+    url = scraper.build_url()
+    
+    # URL should have fd=30 for month
+    assert 'fd=30' in url, "URL should contain fd=30 for month"
+    assert '{fd}' not in url, "URL should not contain placeholder {fd}"
     
     scraper.close()
-    print(f"✓ test_base_scraper_custom_rate_limit PASSED")
+    print(f"✓ test_build_url_with_month_timeframe PASSED")
 
 
-def test_base_scraper_headers():
-    """Test that User-Agent header is present"""
-    scraper = BaseScraper()
+def test_build_url_without_timeframe():
+    """Test building URL for option that doesn't need timeframe"""
+    scraper = OpenInsiderScraper('l', None)  # TOP option, no timeframe needed
     
-    assert 'User-Agent' in scraper.headers, "Headers should contain User-Agent"
-    assert 'Mozilla' in scraper.headers['User-Agent'], "User-Agent should look like a browser"
-    assert 'Accept' in scraper.headers, "Headers should contain Accept"
-    assert 'Accept-Language' in scraper.headers, "Headers should contain Accept-Language"
+    url = scraper.build_url()
+    
+    # URL should be unchanged, no fd parameter
+    assert 'top-officer-purchases' in url, "URL should contain top-officer-purchases"
+    assert 'fd=' not in url, "URL should not contain fd parameter for TOP options"
     
     scraper.close()
-    print(f"✓ test_base_scraper_headers PASSED")
+    print(f"✓ test_build_url_without_timeframe PASSED")
 
 
-def test_close_method():
-    """Test that close() method works without error"""
-    scraper = BaseScraper()
+def test_clean_number_with_currency():
+    """Test cleaning currency values"""
+    scraper = OpenInsiderScraper('a', '2weeks')
     
-    # Capture output
-    old_stdout = sys.stdout
-    sys.stdout = StringIO()
-    
-    try:
-        scraper.close()
-        output = sys.stdout.getvalue()
-        
-        assert 'closed' in output.lower(), "Output should mention closing"
-        
-        print(f"✓ test_close_method PASSED", file=sys.stderr)
-    finally:
-        sys.stdout = old_stdout
-
-
-def test_context_manager_enter():
-    """Test that __enter__ returns self"""
-    scraper = BaseScraper()
-    
-    result = scraper.__enter__()
-    
-    assert result is scraper, "__enter__ should return self"
+    result = scraper.clean_number('$21,868,640', is_currency=True)
+    assert result == 21868640.0, f"Expected 21868640.0, got {result}"
     
     scraper.close()
-    print(f"✓ test_context_manager_enter PASSED")
+    print(f"✓ test_clean_number_with_currency PASSED")
 
 
-def test_context_manager_exit():
-    """Test that __exit__ closes the session"""
-    scraper = BaseScraper()
+def test_clean_number_with_comma():
+    """Test cleaning numbers with commas"""
+    scraper = OpenInsiderScraper('a', '2weeks')
     
-    # Capture output
+    result = scraper.clean_number('1,024,000', is_integer=True)
+    assert result == 1024000, f"Expected 1024000, got {result}"
+    
+    scraper.close()
+    print(f"✓ test_clean_number_with_comma PASSED")
+
+
+def test_clean_number_with_negative():
+    """Test cleaning negative numbers"""
+    scraper = OpenInsiderScraper('a', '2weeks')
+    
+    result = scraper.clean_number('-$500,000', is_currency=True)
+    assert result == -500000.0, f"Expected -500000.0, got {result}"
+    
+    scraper.close()
+    print(f"✓ test_clean_number_with_negative PASSED")
+
+
+def test_clean_number_with_new():
+    """Test cleaning 'New' value"""
+    scraper = OpenInsiderScraper('a', '2weeks')
+    
+    result = scraper.clean_number('New')
+    assert result == 0, f"Expected 0 for 'New', got {result}"
+    
+    scraper.close()
+    print(f"✓ test_clean_number_with_new PASSED")
+
+
+def test_clean_number_empty():
+    """Test cleaning empty value"""
+    scraper = OpenInsiderScraper('a', '2weeks')
+    
+    result = scraper.clean_number('')
+    assert result == 0, f"Expected 0 for empty string, got {result}"
+    
+    scraper.close()
+    print(f"✓ test_clean_number_empty PASSED")
+
+
+def test_extract_percentage():
+    """Test extracting percentage from text"""
+    scraper = OpenInsiderScraper('a', '2weeks')
+    
+    result = scraper.extract_percentage('+343%')
+    assert result == 343.0, f"Expected 343.0, got {result}"
+    
+    scraper.close()
+    print(f"✓ test_extract_percentage PASSED")
+
+
+def test_extract_percentage_negative():
+    """Test extracting negative percentage"""
+    scraper = OpenInsiderScraper('a', '2weeks')
+    
+    result = scraper.extract_percentage('-15%')
+    assert result == -15.0, f"Expected -15.0, got {result}"
+    
+    scraper.close()
+    print(f"✓ test_extract_percentage_negative PASSED")
+
+
+def test_extract_percentage_no_percent():
+    """Test extracting percentage when none present"""
+    scraper = OpenInsiderScraper('a', '2weeks')
+    
+    result = scraper.extract_percentage('no percent here')
+    assert result == 0.0, f"Expected 0.0 for missing percent, got {result}"
+    
+    scraper.close()
+    print(f"✓ test_extract_percentage_no_percent PASSED")
+
+
+def test_extract_currency():
+    """Test extracting currency from text"""
+    scraper = OpenInsiderScraper('a', '2weeks')
+    
+    result = scraper.extract_currency('$21,868,640')
+    assert result == 21868640.0, f"Expected 21868640.0, got {result}"
+    
+    scraper.close()
+    print(f"✓ test_extract_currency PASSED")
+
+
+def test_extract_currency_negative():
+    """Test extracting negative currency"""
+    scraper = OpenInsiderScraper('a', '2weeks')
+    
+    result = scraper.extract_currency('-$500,000')
+    assert result == -500000.0, f"Expected -500000.0, got {result}"
+    
+    scraper.close()
+    print(f"✓ test_extract_currency_negative PASSED")
+
+
+@patch('scrapers.openinsider.OpenInsiderScraper.fetch')
+def test_scrape_fetch_failure(mock_fetch):
+    """Test scrape when fetch returns None"""
+    mock_fetch.return_value = None
+    
+    scraper = OpenInsiderScraper('a', '2weeks')
+    
     old_stdout = sys.stdout
     sys.stdout = StringIO()
     
     try:
-        scraper.__exit__(None, None, None)
-        output = sys.stdout.getvalue()
-        
-        assert 'closed' in output.lower(), "Should close session"
-        
-        print(f"✓ test_context_manager_exit PASSED", file=sys.stderr)
-    finally:
-        sys.stdout = old_stdout
-
-
-def test_context_manager_with_statement():
-    """Test using BaseScraper with 'with' statement"""
-    old_stdout = sys.stdout
-    sys.stdout = StringIO()
-    
-    try:
-        with BaseScraper() as scraper:
-            assert scraper is not None, "Scraper should be initialized in with block"
-            assert scraper.session is not None, "Session should exist"
-        
-        output = sys.stdout.getvalue()
-        assert 'closed' in output.lower(), "Should close when exiting with block"
-        
-        print(f"✓ test_context_manager_with_statement PASSED", file=sys.stderr)
-    finally:
-        sys.stdout = old_stdout
-
-
-@patch('scrapers.base.requests.Session.get')
-@patch('scrapers.base.time.sleep')
-def test_fetch_success_200(mock_sleep, mock_get):
-    """Test successful fetch with 200 status code"""
-    # Mock the response
-    mock_response = Mock()
-    mock_response.status_code = 200
-    mock_response.text = "<html><body>Test Content</body></html>"
-    mock_get.return_value = mock_response
-    
-    scraper = BaseScraper(rate_limit_delay=2.0)
-    
-    old_stdout = sys.stdout
-    sys.stdout = StringIO()
-    
-    try:
-        result = scraper.fetch("https://example.com")
-        output = sys.stdout.getvalue()
+        result = scraper.scrape()
         sys.stdout = old_stdout
         
-        assert result == "<html><body>Test Content</body></html>", "Should return HTML content"
-        assert "fetching" in output, f"Should log fetching, got: {output}"
-        assert "Succesfully fetched" in output, f"Should log success, got: {output}"
+        assert result == [], "Should return empty list when fetch fails"
+        assert mock_fetch.called, "fetch should have been called"
         
-        # Verify rate limit was applied
-        mock_sleep.assert_called_once_with(2.0)
-        
-        print(f"✓ test_fetch_success_200 PASSED")
-    finally:
-        sys.stdout = old_stdout
-        scraper.close()
-
-
-@patch('scrapers.base.requests.Session.get')
-@patch('scrapers.base.time.sleep')
-def test_fetch_rate_limited_429(mock_sleep, mock_get):
-    """Test fetch when rate limited (429 status)"""
-    mock_response = Mock()
-    mock_response.status_code = 429
-    mock_get.return_value = mock_response
-    
-    scraper = BaseScraper(rate_limit_delay=2.0)
-    
-    old_stdout = sys.stdout
-    sys.stdout = StringIO()
-    
-    try:
-        result = scraper.fetch("https://example.com")
-        output = sys.stdout.getvalue()
-        sys.stdout = old_stdout
-        
-        assert result is None, "Should return None on 429"
-        assert "429" in output, f"Should mention 429 status, got: {output}"
-        assert "rate limited" in output, f"Should mention rate limiting, got: {output}"
-        
-        print(f"✓ test_fetch_rate_limited_429 PASSED")
-    finally:
-        sys.stdout = old_stdout
-        scraper.close()
-
-
-@patch('scrapers.base.requests.Session.get')
-@patch('scrapers.base.time.sleep')
-def test_fetch_not_found_404(mock_sleep, mock_get):
-    """Test fetch when page not found (404 status)"""
-    mock_response = Mock()
-    mock_response.status_code = 404
-    mock_get.return_value = mock_response
-    
-    scraper = BaseScraper()
-    
-    old_stdout = sys.stdout
-    sys.stdout = StringIO()
-    
-    try:
-        result = scraper.fetch("https://example.com/notfound")
-        output = sys.stdout.getvalue()
-        sys.stdout = old_stdout
-        
-        assert result is None, "Should return None on 404"
-        assert "404" in output, f"Should mention 404 status, got: {output}"
-        assert "page not found" in output, f"Should mention page not found, got: {output}"
-        
-        print(f"✓ test_fetch_not_found_404 PASSED")
+        print(f"✓ test_scrape_fetch_failure PASSED")
     finally:
         sys.stdout = old_stdout
         scraper.close()
 
 
-@patch('scrapers.base.requests.Session.get')
-@patch('scrapers.base.time.sleep')
-def test_fetch_other_status_code(mock_sleep, mock_get):
-    """Test fetch with other error status codes"""
-    mock_response = Mock()
-    mock_response.status_code = 500
-    mock_get.return_value = mock_response
+@patch('scrapers.openinsider.OpenInsiderScraper.fetch')
+def test_scrape_empty_html(mock_fetch):
+    """Test scrape with no table in HTML"""
+    mock_fetch.return_value = "<html><body>No table here</body></html>"
     
-    scraper = BaseScraper()
+    scraper = OpenInsiderScraper('a', '2weeks')
     
     old_stdout = sys.stdout
     sys.stdout = StringIO()
     
     try:
-        result = scraper.fetch("https://example.com")
-        output = sys.stdout.getvalue()
+        result = scraper.scrape()
+        sys.stdout = old_stdout
         
-        assert result is None, "Should return None on 500"
-        assert "500" in output, "Should mention 500 status"
+        assert result == [], "Should return empty list when no table found"
         
-        print(f"✓ test_fetch_other_status_code PASSED", file=sys.stderr)
+        print(f"✓ test_scrape_empty_html PASSED")
     finally:
         sys.stdout = old_stdout
         scraper.close()
 
 
-@patch('scrapers.base.requests.Session.get')
-@patch('scrapers.base.time.sleep')
-def test_fetch_timeout(mock_sleep, mock_get):
-    """Test fetch when request times out"""
-    # Mock a timeout exception
-    mock_get.side_effect = requests.exceptions.Timeout()
+@patch('scrapers.openinsider.OpenInsiderScraper.fetch')
+def test_scrape_with_sample_table(mock_fetch):
+    """Test scrape with sample HTML table"""
+    # Sample HTML with a simple transaction table
+    sample_html = """
+    <html>
+    <body>
+    <table>
+        <tr>
+            <th>Filing Date</th>
+            <th>Trade Date</th>
+            <th>Ticker</th>
+            <th>Company Name</th>
+            <th>Industry</th>
+            <th>Insider Name</th>
+            <th>Title</th>
+            <th>Trade Type</th>
+            <th>Price</th>
+            <th>Qty</th>
+            <th>Owned</th>
+            <th>ΔOwn Value</th>
+        </tr>
+        <tr>
+            <td>2026-01-22 16:02:03</td>
+            <td>2026-01-21</td>
+            <td>GME</td>
+            <td>Gamestop Corp</td>
+            <td>Retail</td>
+            <td>Zhou Hongyi</td>
+            <td>Dr</td>
+            <td>P - Purchase</td>
+            <td>$21.36</td>
+            <td>1,024,000</td>
+            <td>38,944,306</td>
+            <td>+343% $21,868,640</td>
+        </tr>
+    </table>
+    </body>
+    </html>
+    """
     
-    scraper = BaseScraper()
+    mock_fetch.return_value = sample_html
     
-    old_stdout = sys.stdout
-    sys.stdout = StringIO()
-    
-    try:
-        result = scraper.fetch("https://example.com")
-        output = sys.stdout.getvalue()
-        sys.stdout = old_stdout
-        
-        assert result is None, "Should return None on timeout"
-        assert "Timeout" in output, f"Should mention timeout, got: {output}"
-        assert "10 seconds" in output, f"Should mention 10 second timeout, got: {output}"
-        
-        print(f"✓ test_fetch_timeout PASSED")
-    finally:
-        sys.stdout = old_stdout
-        scraper.close()
-
-
-@patch('scrapers.base.requests.Session.get')
-@patch('scrapers.base.time.sleep')
-def test_fetch_connection_error(mock_sleep, mock_get):
-    """Test fetch when connection fails"""
-    # Mock a connection error
-    mock_get.side_effect = requests.exceptions.ConnectionError()
-    
-    scraper = BaseScraper()
-    
-    old_stdout = sys.stdout
-    sys.stdout = StringIO()
-    
-    try:
-        result = scraper.fetch("https://example.com")
-        output = sys.stdout.getvalue()
-        sys.stdout = old_stdout
-        
-        assert result is None, "Should return None on connection error"
-        assert "Connection Error" in output, f"Should mention connection error, got: {output}"
-        
-        print(f"✓ test_fetch_connection_error PASSED")
-    finally:
-        sys.stdout = old_stdout
-        scraper.close()
-
-
-@patch('scrapers.base.requests.Session.get')
-@patch('scrapers.base.time.sleep')
-def test_fetch_generic_request_exception(mock_sleep, mock_get):
-    """Test fetch with generic RequestException"""
-    mock_get.side_effect = requests.exceptions.RequestException("Generic error")
-    
-    scraper = BaseScraper()
+    scraper = OpenInsiderScraper('a', '2weeks')
     
     old_stdout = sys.stdout
     sys.stdout = StringIO()
     
     try:
-        result = scraper.fetch("https://example.com")
-        output = sys.stdout.getvalue()
+        result = scraper.scrape()
         sys.stdout = old_stdout
         
-        assert result is None, "Should return None on RequestException"
-        assert "Request Error" in output, f"Should mention request error, got: {output}"
+        # Should have extracted 1 transaction (header row should be skipped)
+        assert len(result) >= 1, f"Should extract at least 1 transaction, got {len(result)}"
         
-        print(f"✓ test_fetch_generic_request_exception PASSED")
-    finally:
-        sys.stdout = old_stdout
-        scraper.close()
-
-
-@patch('scrapers.base.requests.Session.get')
-@patch('scrapers.base.time.sleep')
-def test_fetch_unexpected_exception(mock_sleep, mock_get):
-    """Test fetch with unexpected exception"""
-    mock_get.side_effect = Exception("Unexpected error")
-    
-    scraper = BaseScraper()
-    
-    old_stdout = sys.stdout
-    sys.stdout = StringIO()
-    
-    try:
-        result = scraper.fetch("https://example.com")
-        output = sys.stdout.getvalue()
-        sys.stdout = old_stdout
+        # Check first transaction has required fields
+        if len(result) > 0:
+            trans = result[0]
+            assert 'ticker' in trans, "Transaction should have ticker"
+            assert trans['ticker'] == 'GME', f"Expected ticker 'GME', got {trans['ticker']}"
+            assert 'company_name' in trans, "Transaction should have company_name"
+            assert 'price' in trans, "Transaction should have price"
+            assert 'quantity' in trans, "Transaction should have quantity"
+            assert trans['quantity'] == 1024000, f"Expected quantity 1024000, got {trans['quantity']}"
         
-        assert result is None, "Should return None on unexpected error"
-        assert "Unexpected error" in output, f"Should mention unexpected error, got: {output}"
-        
-        print(f"✓ test_fetch_unexpected_exception PASSED")
-    finally:
-        sys.stdout = old_stdout
-        scraper.close()
-
-
-@patch('scrapers.base.requests.Session.get')
-@patch('scrapers.base.time.sleep')
-def test_fetch_respects_rate_limit_delay(mock_sleep, mock_get):
-    """Test that rate limit delay is actually applied"""
-    mock_response = Mock()
-    mock_response.status_code = 200
-    mock_response.text = "Content"
-    mock_get.return_value = mock_response
-    
-    scraper = BaseScraper(rate_limit_delay=3.5)
-    
-    old_stdout = sys.stdout
-    sys.stdout = StringIO()
-    
-    try:
-        scraper.fetch("https://example.com")
-        
-        # Verify sleep was called with correct delay
-        mock_sleep.assert_called_once_with(3.5)
-        
-        print(f"✓ test_fetch_respects_rate_limit_delay PASSED", file=sys.stderr)
-    finally:
-        sys.stdout = old_stdout
-        scraper.close()
-
-
-@patch('scrapers.base.requests.Session.get')
-@patch('scrapers.base.time.sleep')
-def test_fetch_uses_correct_timeout(mock_sleep, mock_get):
-    """Test that fetch uses 10 second timeout"""
-    mock_response = Mock()
-    mock_response.status_code = 200
-    mock_response.text = "Content"
-    mock_get.return_value = mock_response
-    
-    scraper = BaseScraper()
-    
-    old_stdout = sys.stdout
-    sys.stdout = StringIO()
-    
-    try:
-        scraper.fetch("https://example.com")
-        
-        # Verify get was called with timeout=10
-        call_args = mock_get.call_args
-        assert call_args[1]['timeout'] == 10, "Should use 10 second timeout"
-        
-        print(f"✓ test_fetch_uses_correct_timeout PASSED", file=sys.stderr)
-    finally:
-        sys.stdout = old_stdout
-        scraper.close()
-
-
-@patch('scrapers.base.requests.Session.get')
-@patch('scrapers.base.time.sleep')
-def test_fetch_passes_headers(mock_sleep, mock_get):
-    """Test that fetch passes headers in request"""
-    mock_response = Mock()
-    mock_response.status_code = 200
-    mock_response.text = "Content"
-    mock_get.return_value = mock_response
-    
-    scraper = BaseScraper()
-    
-    old_stdout = sys.stdout
-    sys.stdout = StringIO()
-    
-    try:
-        scraper.fetch("https://example.com")
-        
-        # Verify headers were passed
-        call_args = mock_get.call_args
-        assert 'headers' in call_args[1], "Should pass headers"
-        assert call_args[1]['headers'] == scraper.headers, "Should use scraper headers"
-        
-        print(f"✓ test_fetch_passes_headers PASSED", file=sys.stderr)
+        print(f"✓ test_scrape_with_sample_table PASSED")
     finally:
         sys.stdout = old_stdout
         scraper.close()
 
 
 def run_all_tests():
-    """Run all base scraper tests"""
+    """Run all tests"""
     print("\n" + "="*60)
-    print("RUNNING BASE SCRAPER TESTS")
+    print("RUNNING OPENINSIDER SCRAPER TESTS")
     print("="*60 + "\n")
     
     tests = [
-        test_base_scraper_initialization,
-        test_base_scraper_default_rate_limit,
-        test_base_scraper_custom_rate_limit,
-        test_base_scraper_headers,
-        test_close_method,
-        test_context_manager_enter,
-        test_context_manager_exit,
-        test_context_manager_with_statement,
-        test_fetch_success_200,
-        test_fetch_rate_limited_429,
-        test_fetch_not_found_404,
-        test_fetch_other_status_code,
-        test_fetch_timeout,
-        test_fetch_connection_error,
-        test_fetch_generic_request_exception,
-        test_fetch_unexpected_exception,
-        test_fetch_respects_rate_limit_delay,
-        test_fetch_uses_correct_timeout,
-        test_fetch_passes_headers
+        test_options_dictionary_exists,
+        test_options_dictionary_has_all_letters,
+        test_options_dictionary_structure,
+        test_latest_options_need_timeframe,
+        test_top_options_dont_need_timeframe,
+        test_openinsider_scraper_initialization,
+        test_openinsider_scraper_invalid_option,
+        test_build_url_with_2weeks_timeframe,
+        test_build_url_with_month_timeframe,
+        test_build_url_without_timeframe,
+        test_clean_number_with_currency,
+        test_clean_number_with_comma,
+        test_clean_number_with_negative,
+        test_clean_number_with_new,
+        test_clean_number_empty,
+        test_extract_percentage,
+        test_extract_percentage_negative,
+        test_extract_percentage_no_percent,
+        test_extract_currency,
+        test_extract_currency_negative,
+        test_scrape_fetch_failure,
+        test_scrape_empty_html,
+        test_scrape_with_sample_table,
     ]
     
     passed = 0
