@@ -492,6 +492,9 @@ class OpenInsiderScraper(BaseScraper):
         # Remove spaces
         text = text.strip()
         
+        # Check if negative before processing
+        is_negative = text.startswith('-')
+        
         # Find the $ symbol
         dollar_index = text.find('$')
         
@@ -503,4 +506,10 @@ class OpenInsiderScraper(BaseScraper):
         currency_str = text[dollar_index+1:]
         
         # Use clean_number to handle the rest
-        return self.clean_number(currency_str, is_currency=True)
+        result = self.clean_number(currency_str, is_currency=True)
+        
+        # Apply negative if it was there
+        if is_negative:
+            result = -result
+        
+        return result

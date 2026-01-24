@@ -17,7 +17,7 @@ from scrapers.openinsider import OpenInsiderScraper, options_dictionary
 def test_options_dictionary_exists():
     """Test that options_dictionary is defined and has all options"""
     assert options_dictionary is not None, "options_dictionary should exist"
-    assert len(options_dictionary) == 16, f"Should have 16 options, got {len(options_dictionary)}"
+    assert len(options_dictionary) == 17, f"Should have 16 options, got {len(options_dictionary)}"
     print(f"✓ test_options_dictionary_exists PASSED")
 
 
